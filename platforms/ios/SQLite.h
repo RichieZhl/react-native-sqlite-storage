@@ -13,10 +13,10 @@
  * See http://opensource.org/licenses/alphabetical for full text.
  */
 
-#import <React/RCTBridgeModule.h>
-
 // Used to remove dependency on sqlite3.h in this header:
 struct sqlite3;
+
+typedef void (^RCTResponseSenderBlock)(NSArray *response);
 
 enum WebSQLError {
     UNKNOWN_ERR = 0,
@@ -28,7 +28,9 @@ enum WebSQLError {
     CONSTRAINT_ERR = 6,
     TIMEOUT_ERR = 7
 };
-typedef int WebSQLError;
+//typedef int WebSQLError;
+
+@protocol RCTBridgeModule;
 
 @interface SQLite : NSObject <RCTBridgeModule> {
     NSMutableDictionary *openDBs;

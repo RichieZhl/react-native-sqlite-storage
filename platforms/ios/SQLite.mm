@@ -22,6 +22,7 @@
 #import <React/RCTUtils.h>
 #import <React/RCTBridge.h>
 #import <React/RCTEventDispatcher.h>
+#import <React/RCTBridgeModule.h>
 
 /*
  * Copyright (C) 2015-Present Andrzej Porebski
@@ -32,7 +33,7 @@
  * See http://opensource.org/licenses/alphabetical for full text.
  */
 
-#import "sqlite3.h"
+#import <sqlite3.h>
 
 #include <regex.h>
 
@@ -299,7 +300,7 @@ RCT_EXPORT_METHOD(close: (NSDictionary *) options success:(RCTResponseSenderBloc
         RCTLog(@"close: db name was not found in open databases: %@", dbFileName);
         pluginResult = [SQLiteResult resultWithStatus:SQLiteStatus_ERROR messageAsString:@"Specified db was not open"];
       } else {
-        sqlite3 *db = [((NSValue *) dbInfo[@"dbPointer"]) pointerValue];
+        sqlite3 *db = (sqlite3 *)[((NSValue *) dbInfo[@"dbPointer"]) pointerValue];
         NSString *dbPath = dbInfo[@"dbPath"];
             
         if ([[NSFileManager defaultManager] fileExistsAtPath:dbPath]) {
@@ -356,7 +357,7 @@ RCT_EXPORT_METHOD(attach: (NSDictionary *) options success:(RCTResponseSenderBlo
         RCTLog(@"attach: db name was not found in open databases: %@", dbName);
         pluginResult = [SQLiteResult resultWithStatus:SQLiteStatus_ERROR messageAsString:@"Specified db for ALIAS was not open"];
       } else {
-        sqlite3 *db = [((NSValue *) dbInfo[@"dbPointer"]) pointerValue];
+        sqlite3 *db = (sqlite3 *)[((NSValue *) dbInfo[@"dbPointer"]) pointerValue];
         NSString *dbPathToAttach = dbInfoToAttach[@"dbPath"];
         
         NSString* sql = [NSString stringWithFormat:@"ATTACH DATABASE '%@' AS %@", dbPathToAttach, dbAlias];
@@ -480,7 +481,7 @@ RCT_EXPORT_METHOD(executeSql: (NSDictionary *) options success:(RCTResponseSende
     return [SQLiteResult resultWithStatus:SQLiteStatus_ERROR messageAsString:@"No such database, you must open it first"];
   }
   
-  sqlite3 *db = [((NSValue *) dbInfo[@"dbPointer"]) pointerValue];
+  sqlite3 *db = (sqlite3 *)[((NSValue *) dbInfo[@"dbPointer"]) pointerValue];
   
   NSString *sql = options[@"sql"];
   if (sql == NULL) {
@@ -539,7 +540,7 @@ RCT_EXPORT_METHOD(executeSql: (NSDictionary *) options success:(RCTResponseSende
               columnValue = [NSNumber numberWithDouble: sqlite3_column_double(statement, i)];
               break;
             case SQLITE_BLOB:
-              columnValue = [SQLite getBlobAsBase64String: sqlite3_column_blob(statement, i)
+              columnValue = [SQLite getBlobAsBase64String: (const char *)sqlite3_column_blob(statement, i)
                                                withLength: sqlite3_column_bytes(statement, i)];
 #ifdef INCLUDE_SQL_BLOB_BINDING // TBD subjet to change:
               columnValue = [@"sqlblob:;base64," stringByAppendingString:columnValue];
@@ -645,7 +646,7 @@ RCT_EXPORT_METHOD(executeSql: (NSDictionary *) options success:(RCTResponseSende
 #endif
     {
       NSData *data = [stringArg dataUsingEncoding:NSUTF8StringEncoding];
-      sqlite3_bind_text(statement, (int) argIndex, data.bytes, (int) data.length, SQLITE_TRANSIENT);
+      sqlite3_bind_text(statement, (int) argIndex, (const char *)data.bytes, (int) data.length, SQLITE_TRANSIENT);
     }
   }
 }
@@ -663,7 +664,7 @@ RCT_EXPORT_METHOD(executeSql: (NSDictionary *) options success:(RCTResponseSende
     for (i=0; i<[keys count]; i++) {
       key = [keys objectAtIndex:i];
       dbInfo = openDBs[key];
-      db = [((NSValue *) dbInfo[@"dbPointer"]) pointerValue];
+      db = (sqlite3 *)[((NSValue *) dbInfo[@"dbPointer"]) pointerValue];
       sqlite3_close (db);
     }
   
